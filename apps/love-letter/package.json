@@ -13,5 +13,6 @@
   },
   "scripts": {
     "eas-build-post-install": "cd ../../ && node tools/scripts/eas-build-post-install.mjs . apps/love-letter"
-  }
+  },
+  "devDependencies": {}
 }
