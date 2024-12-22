@@ -11,7 +11,7 @@ import type { UserType } from '../types/userType';
 import { globalStyles } from '../utils/globalStyles';
 import { GameView } from '../game/gameView';
 import { avatars } from '../utils/avatar';
-import backgroundImage from '../../assets/bg.png';
+import backgroundImage from '../../assets/backgrounds/1.png';
 import { GameEntity, GameService } from '@offline';
 import { ModalParameters } from '../parameters/modalParameters';
 import * as NavigationBar from 'expo-navigation-bar';
