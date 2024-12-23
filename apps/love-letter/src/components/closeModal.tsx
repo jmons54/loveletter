@@ -1,10 +1,19 @@
 import { Pressable, PressableProps, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import React from 'react';
+import { playSound } from '../utils/sound';
 
-export function CloseModal(props: PressableProps) {
+export function CloseModal({ onPress, ...props }: PressableProps) {
   return (
-    <Pressable style={[styles.closeIcon]} {...props}>
+    <Pressable
+      style={[styles.closeIcon]}
+      onPress={(e) => {
+        if (onPress) {
+          playSound('click');
+          onPress(e);
+        }
+      }}
+    >
       <Icon name="close" size={24} color="#fff" />
     </Pressable>
   );

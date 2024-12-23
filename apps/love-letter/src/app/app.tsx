@@ -11,7 +11,7 @@ import backgroundImage from '../../assets/backgrounds/1.png';
 import { GameEntity, GameService } from '@offline';
 import { ModalParameters } from '../parameters/modalParameters';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { stopAllMusic } from '../utils/sound';
+import { playSound, stopAllMusic } from '../utils/sound';
 import { useInit } from '../hook/useInit';
 import { avatars } from '../utils/avatar';
 
@@ -79,6 +79,7 @@ export function App() {
               <TouchableOpacity
                 style={styles.floatingButton}
                 onPress={() => {
+                  playSound('click');
                   setShowModalParameters(true);
                 }}
               >

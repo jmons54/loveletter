@@ -30,6 +30,7 @@ export interface GameCardsHandle {
     toX: number;
     toY: number;
     delay?: number;
+    cardId: string | null;
     onComplete: () => void;
   }) => void;
   sendCardToPlayed: (params: {
@@ -39,6 +40,8 @@ export interface GameCardsHandle {
     width: number;
   }) => Promise<void>;
   botPlayCard: (cardId: string) => Promise<void>;
+  showCard: (cardIndex: string) => Promise<void>;
+  hideCard: (cardIndex: string) => Promise<void>;
 }
 
 interface GameCardsProps {
@@ -113,6 +116,7 @@ export const GameCards = forwardRef(
       toX,
       toY,
       delay = 0,
+      cardId,
       onComplete,
     }) => {
       const cardIndex = gameCards.findIndex((card) => !card.isDistributed);
@@ -121,7 +125,11 @@ export const GameCards = forwardRef(
       const isUser = player.id === user.id;
 
       const zIndex =
-        gameCards.find((card) => card.player?.id === player.id)?.zIndex ?? 100;
+        gameCards.find(
+          (card) =>
+            cardId === card.card.id ||
+            (!cardId && card.player?.id === player.id)
+        )?.zIndex ?? 100;
 
       const updatedCards = [...gameCards];
       const gameCard = updatedCards[cardIndex];
@@ -136,7 +144,10 @@ export const GameCards = forwardRef(
         playSound(isUser ? 'cardFlip' : 'cardMove');
         setGameCards(updatedCards);
         const playerCards = updatedCards.filter(
-          (card) => card.player?.id === player.id && card.isDistributed
+          (card) =>
+            card.player?.id === player.id &&
+            card.isDistributed &&
+            card.card.id !== cardId
         );
         animatePlayerCards(playerCards, isUser, windowSize, toX);
 
@@ -245,6 +256,34 @@ export const GameCards = forwardRef(
       });
     };
 
+    const showCard: GameCardsHandle['showCard'] = (cardId) => {
+      const updatedCards = [...gameCards];
+      const gameCard = updatedCards.find(
+        (c) => c.card.id === cardId
+      ) as GameCard;
+      gameCard.flipped = true;
+      setGameCards(updatedCards);
+      return new Promise<void>((resolve) => {
+        Animated.delay(2000).start(() => {
+          resolve();
+        });
+      });
+    };
+
+    const hideCard: GameCardsHandle['hideCard'] = (cardId) => {
+      const updatedCards = [...gameCards];
+      const gameCard = updatedCards.find(
+        (c) => c.card.id === cardId
+      ) as GameCard;
+      gameCard.flipped = false;
+      setGameCards(updatedCards);
+      return new Promise<void>((resolve) => {
+        Animated.delay(1000).start(() => {
+          resolve();
+        });
+      });
+    };
+
     const sendCardToPlayed: GameCardsHandle['sendCardToPlayed'] = ({
       cardId,
       x,
@@ -330,6 +369,8 @@ export const GameCards = forwardRef(
         distributeAsideCard,
         sendCardToPlayed,
         botPlayCard,
+        showCard,
+        hideCard,
       })
     );
 

@@ -17,6 +17,7 @@ import {
   CardValue,
   CurrentEffectType,
   determineCardForBotPlayer,
+  EffectResponse,
 } from '@shared';
 import { RemainingCards, RemainingCardsHandle } from './remainingCards';
 import { useWindowSize } from '../hook/useWindowSize';
@@ -35,7 +36,7 @@ interface GameViewProps {
 export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
   const windowSize = useWindowSize();
 
-  const deckRef = useRef<GameCardsHandle | null>(null);
+  const gameCardsRef = useRef<GameCardsHandle | null>(null);
   const remainingCardRef = useRef<RemainingCardsHandle | null>(null);
   const playerContainerRef = useRef<View | null>(null);
 
@@ -77,17 +78,24 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
   );
 
   const distributeCardToPlayer = useCallback(
-    async (playerIndex: number, w: number, h: number, delay = 0) => {
+    async (
+      playerIndex: number,
+      w: number,
+      h: number,
+      delay = 0,
+      cardId: string | null = null
+    ) => {
       await waitForResume();
       return new Promise<void>((resolve) => {
         const { top, left } = playerPositions[playerIndex];
         const toX = (left / 100) * w - w / 2;
         const toY = (top / 100) * h - h / 2;
-        deckRef.current?.distributeCardToPlayer({
+        gameCardsRef.current?.distributeCardToPlayer({
           player: players[playerIndex],
           toX,
           toY,
           delay,
+          cardId,
           onComplete() {
             resolve();
           },
@@ -98,9 +106,9 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
   );
 
   const distributeCardToPlayerFromContainer = useCallback(
-    async (playerIndex: number, delay = 0) => {
+    async (playerIndex: number, delay = 0, cardId: string | null = null) => {
       const { w, h } = await getPlayerContainerSize();
-      return distributeCardToPlayer(playerIndex, w, h, delay);
+      return distributeCardToPlayer(playerIndex, w, h, delay, cardId);
     },
     [distributeCardToPlayer]
   );
@@ -128,14 +136,14 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
     setTimeout(async () => {
       await waitForResume();
       const { card } = determineCardForBotPlayer(player, game);
-      await deckRef.current?.botPlayCard(card.id as string);
+      await gameCardsRef.current?.botPlayCard(card.id as string);
       GameService.playCard(
         game,
         player,
         player.hand.findIndex((c) => c.id === card.id)
       );
       setGame({ ...game });
-      await sendCardToPlayed(card.id as string);
+      await sendCurrentCardToPlayed(card.id as string);
     }, 500);
   };
 
@@ -154,11 +162,11 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
       playMusic('game');
       GameService.initRound(game);
       setGame({ ...game });
-      deckRef.current?.shuffleCards({
+      gameCardsRef.current?.shuffleCards({
         cards: game.deck,
         async onComplete() {
           await waitForResume();
-          deckRef.current?.distributeAsideCard(async () => {
+          gameCardsRef.current?.distributeAsideCard(async () => {
             const { w, h } = await getPlayerContainerSize();
             await distributeCardSequentially(0, w, h, () => {
               GameService.distributeInitialCards(game);
@@ -180,23 +188,27 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
     });
   };
 
-  const sendCardToPlayed = async (cardId: string) => {
-    if (!remainingCardRef.current) return;
-    await waitForResume();
+  const sendCurrentCardToPlayed = async (cardId: string) => {
+    await sendCardToPlayed(cardId);
     setCurrentCardId(null);
-    const { x, y, width } = await remainingCardRef.current.getPosition();
-    await deckRef.current?.sendCardToPlayed({
-      cardId,
-      x,
-      y,
-      width,
-    });
     const { isEndOfRound } = GameService.checkEndOfRound(game);
     if (isEndOfRound) return;
     GameService.nextTurn(game);
     setGame({ ...game });
     await distributeCardToPlayerFromContainer(game.turn as number, 500);
     play();
+  };
+
+  const sendCardToPlayed = async (cardId: string) => {
+    if (!remainingCardRef.current) return;
+    await waitForResume();
+    const { x, y, width } = await remainingCardRef.current.getPosition();
+    await gameCardsRef.current?.sendCardToPlayed({
+      cardId,
+      x,
+      y,
+      width,
+    });
   };
 
   const handleEffect = async (
@@ -210,7 +222,7 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
     ) {
       GameService.playEffect(game);
       setGame({ ...game });
-      await sendCardToPlayed(cardId);
+      await sendCurrentCardToPlayed(cardId);
       return;
     }
 
@@ -228,7 +240,11 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
       case 'chancellor': {
         const cards = GameService.drawCardsEffect(game, 2);
         for (let i = 0; i < cards.length; i++) {
-          await distributeCardToPlayerFromContainer(game.turn as number, 500);
+          await distributeCardToPlayerFromContainer(
+            game.turn as number,
+            500,
+            cardId
+          );
         }
         break;
       }
@@ -246,7 +262,7 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
       setCurrentCardId(cardId);
       await handleEffect(cardId, player.currentEffect);
     } else {
-      await sendCardToPlayed(cardId);
+      await sendCurrentCardToPlayed(cardId);
     }
   };
 
@@ -254,8 +270,43 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
     setTargetedChoices(null);
     setTargetedPlayer(playerId);
     const player = players.find((p) => p.id === user.id) as PlayerEntity;
-    if (player.currentEffect?.name === 'guard') {
+    const currentEffect = player.currentEffect;
+    if (currentEffect?.name === 'guard') {
       setModalGuardIsVisible(true);
+    } else {
+      const player = players.find((p) => p.id === playerId) as PlayerEntity;
+      const [playerCard] = player.hand;
+      switch (currentEffect?.name) {
+        case 'priest': {
+          await gameCardsRef.current?.showCard(playerCard.id as string);
+          await gameCardsRef.current?.hideCard(playerCard.id as string);
+          GameService.playEffect(game, {
+            playerId: player.id,
+          });
+          setGame({ ...game });
+          break;
+        }
+        case 'baron': {
+          await gameCardsRef.current?.showCard(playerCard.id as string);
+          const { playerEliminatedId } = GameService.playEffect(game, {
+            playerId: player.id,
+          }) as EffectResponse;
+          if (playerEliminatedId) {
+            const player = players.find(
+              (p) => p.id === playerEliminatedId
+            ) as PlayerEntity;
+            await sendCardToPlayed(player.hand[0].id as string);
+          } else {
+            await gameCardsRef.current?.hideCard(playerCard.id as string);
+          }
+          break;
+        }
+        case 'prince':
+          break;
+        case 'king':
+          break;
+      }
+      await sendCurrentCardToPlayed(currentCardId as string);
     }
   };
 
@@ -269,7 +320,7 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
     setTargetedPlayer(null);
     setModalGuardIsVisible(false);
     await resumeMusic('game');
-    await sendCardToPlayed(currentCardId);
+    await sendCurrentCardToPlayed(currentCardId);
   };
 
   return (
@@ -308,7 +359,7 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
               }}
             >
               <GameCards
-                ref={deckRef}
+                ref={gameCardsRef}
                 user={user}
                 isPlayerTurn={
                   game.turn !== null && players[game.turn].id === user.id

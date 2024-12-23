@@ -39,7 +39,12 @@ export function Parameters({ value, onChange, startNewGame }: ParametersProps) {
         }}
       />
       <View style={styles.container}>
-        <Button onPress={startNewGame}>
+        <Button
+          onPress={() => {
+            playSound('click');
+            startNewGame();
+          }}
+        >
           <Text style={styles.buttonText}>{i18n.t('startNewGame')}</Text>
         </Button>
       </View>
@@ -51,9 +56,9 @@ export function Parameters({ value, onChange, startNewGame }: ParametersProps) {
         }}
         isSoundEnabled={value.soundEnabled}
         toggleSound={() => {
-          if (!value.soundEnabled) playSound('click');
           handleChange({ soundEnabled: !value.soundEnabled });
           setSoundEnabled(!value.soundEnabled);
+          if (!value.soundEnabled) playSound('click');
         }}
         isMusicEnabled={value.musicEnabled}
         toggleMusic={async () => {

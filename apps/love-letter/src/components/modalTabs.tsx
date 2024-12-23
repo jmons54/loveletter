@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { CloseModal } from './closeModal';
+import { playSound } from '../utils/sound';
 
 interface ModalTabsProps<T extends string> {
   isVisible: boolean;
@@ -30,7 +31,10 @@ export function ModalTabs<T extends string>({
           {tabs.map(({ name, text }) => (
             <Pressable
               key={name}
-              onPress={() => onChange(name)}
+              onPress={() => {
+                playSound('click');
+                onChange(name);
+              }}
               style={[styles.tabButton, value === name && styles.activeTab]}
             >
               <Text style={styles.tabText}>{text}</Text>
