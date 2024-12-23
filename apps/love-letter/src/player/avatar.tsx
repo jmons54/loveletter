@@ -1,5 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Image, StyleSheet, Text, Animated } from 'react-native';
+import {
+  View,
+  Image,
+  StyleSheet,
+  Text,
+  Animated,
+  StyleProp,
+  ImageStyle,
+} from 'react-native';
 import { primaryColor, secondaryColor } from '../utils/color';
 import { useWindowSize } from '../hook/useWindowSize';
 
@@ -7,48 +15,65 @@ export interface AvatarProps {
   avatarRef?: React.MutableRefObject<Image | null>;
   name: string;
   avatar: ImageData;
+  isHighlighted?: boolean;
   isActive?: boolean;
-  style?: object;
+  style?: StyleProp<ImageStyle>;
 }
 
 export function Avatar({
   avatarRef,
   name,
   avatar,
+  isHighlighted = false,
   isActive = false,
   style,
 }: AvatarProps) {
   const scale = useRef(new Animated.Value(1)).current;
   const shadowOpacity = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
 
   const windowSize = useWindowSize();
   const avatarSize = windowSize.large ? 80 : windowSize.medium ? 60 : 50;
 
   useEffect(() => {
     if (isActive) {
-      Animated.timing(scale, {
-        toValue: 1.25,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-      Animated.timing(shadowOpacity, {
-        toValue: 0.8,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.timing(scale, {
+          toValue: 1.25,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shadowOpacity, {
+          toValue: 0.8,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
     } else {
-      Animated.timing(scale, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-      Animated.timing(shadowOpacity, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.timing(scale, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shadowOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: isHighlighted ? 0.5 : 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
-  }, [isActive, scale, shadowOpacity]);
+  }, [isActive, scale, shadowOpacity, opacity, isHighlighted]);
 
   return (
     <View style={styles.container}>
@@ -56,6 +81,7 @@ export function Avatar({
         style={{
           transform: [{ scale }],
           shadowOffset: { width: 0, height: 10 },
+          opacity,
           shadowOpacity: shadowOpacity.interpolate({
             inputRange: [0, 1],
             outputRange: [0, 0.5],

@@ -85,8 +85,8 @@ const styles = StyleSheet.create({
   cardContainer: {
     width: '100%',
     height: '100%',
-    maxWidth: 80,
-    maxHeight: 140,
+    maxWidth: 100,
+    maxHeight: 175,
   },
   card: {
     width: '100%',

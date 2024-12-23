@@ -19,6 +19,7 @@ import AmaticSC from '../../assets/fonts/AmaticSC-Regular.ttf';
 import AmaticSCBold from '../../assets/fonts/AmaticSC-Bold.ttf';
 import { getGameParametersData, getUserData } from '../utils/storage';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { setMusicEnabled, setSoundEnabled, stopMusic } from '../utils/sound';
 
 export function App() {
   const [showModalParameters, setShowModalParameters] = useState(true);
@@ -46,6 +47,8 @@ export function App() {
 
   useEffect(() => {
     getGameParametersData().then((data) => {
+      setSoundEnabled(data.soundEnabled);
+      setMusicEnabled(data.musicEnabled);
       setGameParameters(data);
     });
   }, []);
@@ -54,8 +57,9 @@ export function App() {
     setIsGamePaused(showModalParameters);
   }, [showModalParameters]);
 
-  const startNewGame = () => {
+  const startNewGame = async () => {
     if (!user || !gameParameters) return;
+    await stopMusic();
     const newGame = GameService.initGame(
       [user],
       gameParameters?.numberOfPlayers

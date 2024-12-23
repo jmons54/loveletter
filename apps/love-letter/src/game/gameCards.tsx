@@ -29,6 +29,7 @@ export interface GameCardsHandle {
     player: PlayerEntity;
     toX: number;
     toY: number;
+    delay?: number;
     onComplete: () => void;
   }) => void;
   sendCardToPlayed: (params: {
@@ -111,14 +112,15 @@ export const GameCards = forwardRef(
       player,
       toX,
       toY,
+      delay = 0,
       onComplete,
     }) => {
       const cardIndex = gameCards.findIndex((card) => !card.isDistributed);
       if (cardIndex === -1) return;
 
-      playSound('cardMove');
-
       const isUser = player.id === user.id;
+
+      playSound(isUser ? 'cardFlip' : 'cardMove');
 
       const zIndex =
         gameCards.find((card) => card.player?.id === player.id)?.zIndex ?? 100;
@@ -131,44 +133,45 @@ export const GameCards = forwardRef(
       gameCard.flipped = isUser;
       gameCard.initialTranslateX = toX;
       gameCard.initialTranslateY = toY;
-      setGameCards(updatedCards);
 
-      const playerCards = updatedCards.filter(
-        (card) => card.player?.id === player.id && card.isDistributed
-      );
-      animatePlayerCards(playerCards, isUser, windowSize, toX);
+      Animated.delay(delay).start(() => {
+        setGameCards(updatedCards);
+        const playerCards = updatedCards.filter(
+          (card) => card.player?.id === player.id && card.isDistributed
+        );
+        animatePlayerCards(playerCards, isUser, windowSize, toX);
 
-      if (isUser) {
-        Animated.timing(gameCard.scale, {
-          toValue: 1,
+        if (isUser) {
+          Animated.timing(gameCard.scale, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }).start();
+          gameCard.flipped = true;
+        }
+
+        Animated.timing(gameCard.translateY, {
+          toValue:
+            toY -
+            (windowSize.large
+              ? isUser
+                ? 70
+                : 47.5
+              : windowSize.medium
+              ? isUser
+                ? 62.5
+                : 45
+              : isUser
+              ? 45
+              : 35),
           duration: 500,
+          delay: isUser ? 500 : 0,
           useNativeDriver: true,
-        }).start();
-        gameCard.flipped = true;
-      }
-
-      Animated.timing(gameCard.translateY, {
-        toValue:
-          toY -
-          (windowSize.large
-            ? isUser
-              ? 70
-              : 47.5
-            : windowSize.medium
-            ? isUser
-              ? 62.5
-              : 45
-            : isUser
-            ? 45
-            : 35),
-        duration: 500,
-        delay: isUser ? 500 : 0,
-        useNativeDriver: true,
-      }).start(() => {
-        onComplete();
+        }).start(() => {
+          onComplete();
+        });
+        offsetUndistributedCards(updatedCards, windowSize);
       });
-
-      offsetUndistributedCards(updatedCards, windowSize);
     };
 
     const shuffleCards: GameCardsHandle['shuffleCards'] = ({
@@ -191,11 +194,9 @@ export const GameCards = forwardRef(
     }) => {
       const updatedCards = [...gameCards];
       const gameCard = updatedCards[cardIndex];
-      updatedCards[cardIndex].zIndex = 110;
+      updatedCards[cardIndex].zIndex = 210;
       updatedCards[cardIndex].flipped = true;
       setGameCards(updatedCards);
-
-      playSound('cardPlay');
 
       const playerCards = updatedCards.filter(
         (card) =>
@@ -215,7 +216,7 @@ export const GameCards = forwardRef(
 
       const animations = [
         Animated.timing(gameCard.translateX, {
-          toValue: windowSize.large ? 60 : windowSize.medium ? 35 : 25,
+          toValue: windowSize.large ? 50 : windowSize.medium ? 35 : 25,
           duration: 500,
           useNativeDriver: true,
         }),
@@ -230,12 +231,12 @@ export const GameCards = forwardRef(
         if (!isUser) {
           Animated.timing(gameCard.scale, {
             toValue: 1,
-            duration: 400,
+            duration: 500,
             useNativeDriver: true,
           }).start(() => {
             Animated.timing(gameCard.scale, {
               toValue: 0.8,
-              duration: 200,
+              duration: 500,
               useNativeDriver: true,
             }).start(onComplete);
           });
@@ -262,46 +263,47 @@ export const GameCards = forwardRef(
         const indexB = deckOrder.findIndex((card) => card.id === b.card.id);
         return indexA - indexB;
       });
+
       playSound('cardMove');
 
-      playedCard.zIndex =
-        101 + deckOrder.findIndex((card) => card.id === playedCard.card.id);
-      playedCard.player = null;
-      setGameCards(updatedCards);
-
-      if (!windowSize.large) {
-        Animated.timing(playedCard.scale, {
-          toValue: 0.5,
-          duration: 500,
-          useNativeDriver: true,
-        }).start();
-      }
-
-      setPlayedCards(updatedPlayedCards);
-
-      const cardDimensions = getCardDimensions(
-        windowSize.large ? 80 : windowSize.medium ? 40 : 30
-      );
-
       return new Promise<void>((resolve) => {
-        gameCardContainerRef.current?.measureInWindow(async (dx, dy) => {
-          const diffX = x - dx + cardDimensions.width / 2;
-          const diffY =
-            y -
-            dy +
-            cardDimensions.height / 2 +
-            (windowSize.large ? 150 : windowSize.medium ? 80 : 60);
+        Animated.delay(500).start(() => {
+          playedCard.zIndex =
+            101 + deckOrder.findIndex((card) => card.id === playedCard.card.id);
+          playedCard.player = null;
+          setGameCards(updatedCards);
 
-          Animated.parallel(
-            displayCardsAnimation({
-              cards: updatedPlayedCards,
-              windowSize,
-              containerWidth: width,
-              diffY,
-              diffX,
-            })
-          ).start(() => {
-            resolve();
+          if (!windowSize.large) {
+            Animated.timing(playedCard.scale, {
+              toValue: 0.5,
+              duration: 500,
+              useNativeDriver: true,
+            }).start();
+          }
+
+          setPlayedCards(updatedPlayedCards);
+          const cardDimensions = getCardDimensions(
+            windowSize.large ? 80 : windowSize.medium ? 40 : 30
+          );
+          gameCardContainerRef.current?.measureInWindow(async (dx, dy) => {
+            const diffX = x - dx + cardDimensions.width / 2;
+            const diffY =
+              y -
+              dy +
+              cardDimensions.height / 2 +
+              (windowSize.large ? 150 : windowSize.medium ? 80 : 60);
+
+            Animated.parallel(
+              displayCardsAnimation({
+                cards: updatedPlayedCards,
+                windowSize,
+                containerWidth: width,
+                diffY,
+                diffX,
+              })
+            ).start(() => {
+              resolve();
+            });
           });
         });
       });
@@ -310,6 +312,7 @@ export const GameCards = forwardRef(
     const botPlayCard: GameCardsHandle['botPlayCard'] = (cardId) => {
       setNextAction(null);
       const cardIndex = gameCards.findIndex((card) => card.card.id === cardId);
+      playSound('cardFlip');
       return new Promise<void>((resolve) => {
         returnCardToDeck({
           cardIndex,
@@ -338,6 +341,7 @@ export const GameCards = forwardRef(
         isPlayerTurn &&
         nextAction === 'playCard'
       ) {
+        playSound('cardPlay');
         setNextAction(null);
         returnCardToDeck({
           cardIndex: index,

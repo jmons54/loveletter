@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { GameStatus, NumberOfPlayers } from '@shared';
 import { GameService, PlayerEntity } from '@offline';
+import { playSound } from '../utils/sound';
 
 export function useInitGame(
   gameStatus: GameStatus,
@@ -21,14 +22,16 @@ export function useInitGame(
           currentIndex >= players.length &&
           currentIndex % players.length === turn
         ) {
+          playSound('select');
           clearInterval(timer);
           setHighlightedIndex(null);
           onCompleted(turn);
         } else {
+          playSound('highlighted');
           setHighlightedIndex(currentIndex % players.length);
           currentIndex++;
         }
-      }, 200);
+      }, 300);
 
       return () => clearInterval(timer);
     }

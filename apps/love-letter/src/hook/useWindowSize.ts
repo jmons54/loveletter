@@ -8,10 +8,17 @@ export interface WindowSize {
 
 export function useWindowSize(): WindowSize {
   const { width, height } = useWindowDimensions();
-
-  return {
-    large: width > 768,
-    medium: height >= 600,
-    small: height < 600,
+  const windowSize: WindowSize = {
+    large: false,
+    medium: false,
+    small: false,
   };
+  if (width > 768) {
+    windowSize.large = true;
+  } else if (height >= 600) {
+    windowSize.medium = true;
+  } else {
+    windowSize.small = true;
+  }
+  return windowSize;
 }

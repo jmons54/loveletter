@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { View, Image, StyleSheet, Animated } from 'react-native';
 import { PlayerEntity } from '@offline';
-import { Avatar } from './avatar';
 import { TouchableAvatar } from './touchableAvatar';
-import { primaryColor, secondaryColor } from '../utils/color';
+import { primaryColor } from '../utils/color';
 import { playSound } from '../utils/sound';
 import spy from '../../assets/spy.png';
 import handmaid from '../../assets/handmaid.png';
@@ -60,11 +59,7 @@ export function PlayerInfos({
     }
   }, [animated, scale, shadowOpacity]);
 
-  const color = isHighlighted
-    ? primaryColor
-    : isTargeted
-    ? '#E57373'
-    : secondaryColor;
+  const color = isTargeted ? '#E57373' : primaryColor;
 
   const props = {
     name: player.name,
@@ -73,7 +68,7 @@ export function PlayerInfos({
     style: {
       shadowColor: color,
       borderColor: color,
-      borderWidth: isTargeted || isActive ? 2 : 0,
+      borderWidth: 2,
     },
   };
 
@@ -84,19 +79,15 @@ export function PlayerInfos({
     <View
       style={[styles.container, { opacity: player.isEliminated ? 0.7 : 1 }]}
     >
-      {target ? (
-        <TouchableAvatar
-          {...props}
-          onClick={() => {
-            if (target) {
-              playSound('click');
-              target?.(player);
-            }
-          }}
-        />
-      ) : (
-        <Avatar {...props} />
-      )}
+      <TouchableAvatar
+        {...props}
+        onClick={() => {
+          if (target) {
+            playSound('click');
+            target?.(player);
+          }
+        }}
+      />
 
       {hasSpy && !player.isEliminated && (
         <View

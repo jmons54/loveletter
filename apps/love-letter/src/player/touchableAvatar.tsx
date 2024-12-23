@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity } from 'react-native';
+import { Pressable } from 'react-native';
 import { Avatar, AvatarProps } from './avatar';
 
 interface TouchableAvatarProps extends AvatarProps {
@@ -8,8 +8,8 @@ interface TouchableAvatarProps extends AvatarProps {
 
 export function TouchableAvatar({ onClick, ...props }: TouchableAvatarProps) {
   return (
-    <TouchableOpacity activeOpacity={0.8} onPress={onClick}>
+    <Pressable onPress={onClick}>
       <Avatar {...props} />
-    </TouchableOpacity>
+    </Pressable>
   );
 }

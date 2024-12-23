@@ -18,6 +18,7 @@ import { RemainingCards, RemainingCardsHandle } from './remainingCards';
 import { useWindowSize } from '../hook/useWindowSize';
 import { calculatePlayerPositions } from '../utils/position';
 import { useInitGame } from '../hook/useInitGame';
+import { playMusic } from '../utils/sound';
 
 interface GameViewProps {
   user: UserType;
@@ -66,7 +67,7 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
   );
 
   const distributeCardToPlayer = useCallback(
-    async (playerIndex: number, w: number, h: number) => {
+    async (playerIndex: number, w: number, h: number, delay = 0) => {
       await waitForResume();
       return new Promise<void>((resolve) => {
         const { top, left } = playerPositions[playerIndex];
@@ -76,6 +77,7 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
           player: players[playerIndex],
           toX,
           toY,
+          delay,
           onComplete() {
             resolve();
           },
@@ -131,6 +133,7 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
 
   const initRound = useCallback(
     (game: GameEntity) => {
+      playMusic('game');
       GameService.initRound(game);
       setGame({ ...game });
       deckRef.current?.shuffleCards({
@@ -160,26 +163,22 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
   };
 
   const sendCardToPlayed = async (cardId: string) => {
-    setTimeout(async () => {
-      if (!remainingCardRef.current) return;
-      await waitForResume();
-      const { x, y, width } = await remainingCardRef.current.getPosition();
-      await deckRef.current?.sendCardToPlayed({
-        cardId,
-        x,
-        y,
-        width,
-      });
-      const { isEndOfRound } = GameService.checkEndOfRound(game);
-      if (isEndOfRound) return;
-      setTimeout(async () => {
-        GameService.nextTurn(game);
-        setGame({ ...game });
-        const { w, h } = await getPlayerContainerSize();
-        await distributeCardToPlayer(game.turn as number, w, h);
-        play();
-      }, 500);
-    }, 500);
+    if (!remainingCardRef.current) return;
+    await waitForResume();
+    const { x, y, width } = await remainingCardRef.current.getPosition();
+    await deckRef.current?.sendCardToPlayed({
+      cardId,
+      x,
+      y,
+      width,
+    });
+    const { isEndOfRound } = GameService.checkEndOfRound(game);
+    if (isEndOfRound) return;
+    GameService.nextTurn(game);
+    setGame({ ...game });
+    const { w, h } = await getPlayerContainerSize();
+    await distributeCardToPlayer(game.turn as number, w, h, 500);
+    play();
   };
 
   const onPlayCard = async (cardId: string) => {
