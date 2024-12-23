@@ -1,10 +1,10 @@
 import React, {
-  forwardRef,
+  forwardRef, memo,
   useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
-  useState,
+  useState
 } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import type { GameCard, GameCardAnimated } from '../types/gameCard';
@@ -26,24 +26,24 @@ interface RemainingCardsProps {
   playedCards: GameCard[];
 }
 
-export const RemainingCards = forwardRef(
-  ({ playedCards }: RemainingCardsProps, ref) => {
+export const RemainingCards = memo(
+  forwardRef(({ playedCards }: RemainingCardsProps, ref) => {
     const windowSize = useWindowSize();
     const containerRef = useRef<View | null>(null);
 
     const cardAnimations = useRef<Map<string, GameCardAnimated>>(new Map());
-    const [disappearingCards, setDisappearingCards] = useState<Set<string>>(
-      new Set()
-    );
+    const disappearingCards = useRef<Set<string>>(new Set());
     const [containerWidth, setContainerWidth] = useState<number | null>(null);
 
+    const deck = getDeck();
+
     const remainingCards = useMemo(() => {
-      return getDeck().filter(
+      return deck.filter(
         (card) =>
           !playedCards.find((c) => c.card.id === card.id) &&
-          !disappearingCards.has(card.id as string)
+          !disappearingCards.current.has(card.id as string)
       );
-    }, [playedCards, disappearingCards]);
+    }, [deck, playedCards]);
 
     useEffect(() => {
       getDeck().forEach((card) => {
@@ -89,7 +89,9 @@ export const RemainingCards = forwardRef(
     );
 
     const handleCardPlayed = (cardId: string) => {
-      setDisappearingCards((prev) => new Set(prev).add(cardId));
+      if (disappearingCards.current.has(cardId)) return;
+
+      disappearingCards.current.add(cardId);
       const cardAnimation = cardAnimations.current.get(cardId);
 
       if (cardAnimation?.opacity) {
@@ -105,11 +107,7 @@ export const RemainingCards = forwardRef(
             useNativeDriver: true,
           }),
         ]).start(() => {
-          setDisappearingCards((prev) => {
-            const next = new Set(prev);
-            next.delete(cardId);
-            return next;
-          });
+          disappearingCards.current.delete(cardId);
         });
       }
     };
@@ -117,11 +115,11 @@ export const RemainingCards = forwardRef(
     useEffect(() => {
       playedCards.forEach((playedCard) => {
         const cardId = playedCard.card.id as string;
-        if (!disappearingCards.has(cardId)) {
+        if (!disappearingCards.current.has(cardId)) {
           handleCardPlayed(cardId);
         }
       });
-    }, [playedCards, disappearingCards]);
+    }, [playedCards]);
 
     const getStyle = (cardId: string) => {
       const card = cardAnimations.current.get(cardId);
@@ -167,8 +165,8 @@ export const RemainingCards = forwardRef(
                   borderRadius: windowSize.large
                     ? 10
                     : windowSize.medium
-                    ? 4
-                    : 2,
+                      ? 4
+                      : 2,
                 },
               ]}
             ></View>
@@ -176,7 +174,7 @@ export const RemainingCards = forwardRef(
         ))}
       </View>
     );
-  }
+  })
 );
 
 const styles = StyleSheet.create({
