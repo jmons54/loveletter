@@ -1,6 +1,6 @@
 export interface UserType {
   id: number;
   name: string;
-  avatar: ImageData;
+  avatar: number;
   language?: 'en' | 'fr';
 }

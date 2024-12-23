@@ -60,6 +60,27 @@ export function drawCard(game: GameType) {
   return drawnCard;
 }
 
+export function drawCardsEffect(
+  game: GameType,
+  number: number,
+  useAsideCard = false,
+  currentPlayer?: PlayerType
+) {
+  if (!currentPlayer) {
+    currentPlayer = game.players[game.turn as number];
+  }
+  let drawnCards = game.deck.slice(-number);
+  if (useAsideCard && !drawnCards.length) {
+    drawnCards = [game.asideCard as CardType];
+    game.asideCard = null;
+  }
+  if (drawnCards.length) {
+    game.deck.splice(-drawnCards.length);
+    currentPlayer.hand.push(...drawnCards);
+  }
+  return drawnCards;
+}
+
 export const mustPlayCountess = (hand: CardType[]) =>
   hand.some((card) => card.value === 8) &&
   (hand.some((card) => card.value === 5) ||

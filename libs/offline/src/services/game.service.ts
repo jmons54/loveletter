@@ -3,6 +3,7 @@ import {
   checkEndOfRound,
   distributeInitialCards,
   drawCard,
+  drawCardsEffect,
   EffectParams,
   endOfRound,
   generateName,
@@ -20,11 +21,7 @@ import { GameEntity } from '../entities/game.entity';
 
 export class GameService {
   static initGame(
-    users: {
-      id: number;
-      name: string;
-      avatar: string | ImageData;
-    }[],
+    users: Pick<PlayerEntity, 'id' | 'name' | 'avatar'>[],
     numberOfPlayers: NumberOfPlayers,
     shortName = true
   ): GameEntity {
@@ -68,9 +65,19 @@ export class GameService {
     return game;
   }
 
-  static endOfRound(game: GameEntity) {
-    endOfRound(game);
-    return game;
+  static nextTurn(game: GameEntity) {
+    game.turn = getNextTurn(game) as number;
+    drawCard(game);
+    return game.turn;
+  }
+
+  static drawCardsEffect(
+    game: GameEntity,
+    number: number,
+    useAsideCard = false,
+    player?: PlayerEntity
+  ) {
+    return drawCardsEffect(game, number, useAsideCard, player);
   }
 
   static playCard(
@@ -91,13 +98,12 @@ export class GameService {
     return checkEndOfRound(game);
   }
 
-  static checkEndOfGame(game: GameEntity) {
-    return checkEndOfGame(game);
+  static endOfRound(game: GameEntity) {
+    endOfRound(game);
+    return game;
   }
 
-  static nextTurn(game: GameEntity) {
-    game.turn = getNextTurn(game) as number;
-    drawCard(game);
-    return game.turn;
+  static checkEndOfGame(game: GameEntity) {
+    return checkEndOfGame(game);
   }
 }

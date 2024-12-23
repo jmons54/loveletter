@@ -7,7 +7,7 @@ export class PlayerEntity implements PlayerType {
     public readonly isBot = false
   ) {}
 
-  avatar?: string | ImageData;
+  avatar?: number;
 
   isEliminated = false;
 

@@ -40,21 +40,8 @@ export function getAvatar(id: number): ImageData {
   }
 }
 
-export const getRandomAvatar = (avatars: ImageData[]) => {
-  return avatars[Math.floor(Math.random() * avatars.length)];
+export const getRandomAvatar = (avatars: number[]) => {
+  return Math.floor(Math.random() * avatars.length);
 };
 
-export const avatars = [
-  avatar1,
-  avatar2,
-  avatar3,
-  avatar4,
-  avatar5,
-  avatar6,
-  avatar7,
-  avatar8,
-  avatar9,
-  avatar10,
-  avatar11,
-  avatar12,
-];
+export const avatars = Array.from({ length: 12 }, (_, i) => i + 1);

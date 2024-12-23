@@ -5,53 +5,23 @@ import {
   ImageBackground,
   TouchableOpacity,
 } from 'react-native';
-import { useFonts } from 'expo-font';
-import type { GameParametersType } from '../types/gameType';
-import type { UserType } from '../types/userType';
 import { globalStyles } from '../utils/globalStyles';
 import { GameView } from '../game/gameView';
-import { avatars } from '../utils/avatar';
 import backgroundImage from '../../assets/backgrounds/1.png';
 import { GameEntity, GameService } from '@offline';
 import { ModalParameters } from '../parameters/modalParameters';
-import * as NavigationBar from 'expo-navigation-bar';
-import AmaticSC from '../../assets/fonts/AmaticSC-Regular.ttf';
-import AmaticSCBold from '../../assets/fonts/AmaticSC-Bold.ttf';
-import { getGameParametersData, getUserData } from '../utils/storage';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { setMusicEnabled, setSoundEnabled, stopMusic } from '../utils/sound';
+import { stopAllMusic } from '../utils/sound';
+import { useInit } from '../hook/useInit';
+import { avatars } from '../utils/avatar';
 
 export function App() {
   const [showModalParameters, setShowModalParameters] = useState(true);
-  const [user, setUser] = useState<UserType | null>(null);
-  const [game, setGame] = useState<GameEntity | null>(null);
-  const [gameParameters, setGameParameters] =
-    useState<GameParametersType | null>(null);
   const [isGamePaused, setIsGamePaused] = useState(false);
+  const [game, setGame] = useState<GameEntity | null>(null);
   const [gameId, setGameId] = useState(0);
 
-  useFonts({
-    AmaticSC,
-    AmaticSCBold,
-  });
-
-  useEffect(() => {
-    NavigationBar.setBackgroundColorAsync('#000').then();
-  }, []);
-
-  useEffect(() => {
-    getUserData().then((data) => {
-      setUser(data);
-    });
-  }, []);
-
-  useEffect(() => {
-    getGameParametersData().then((data) => {
-      setSoundEnabled(data.soundEnabled);
-      setMusicEnabled(data.musicEnabled);
-      setGameParameters(data);
-    });
-  }, []);
+  const { user, gameParameters, setGameParameters } = useInit(game);
 
   useEffect(() => {
     setIsGamePaused(showModalParameters);
@@ -59,7 +29,7 @@ export function App() {
 
   const startNewGame = async () => {
     if (!user || !gameParameters) return;
-    await stopMusic();
+    await stopAllMusic();
     const newGame = GameService.initGame(
       [user],
       gameParameters?.numberOfPlayers
@@ -93,9 +63,7 @@ export function App() {
               onClose={() => setShowModalParameters(false)}
               startNewGame={startNewGame}
               gameParameters={gameParameters}
-              onGameParametersChange={(gameParameters) => {
-                setGameParameters(gameParameters);
-              }}
+              onGameParametersChange={setGameParameters}
             />
 
             {game && (

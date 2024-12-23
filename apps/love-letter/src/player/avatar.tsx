@@ -15,7 +15,7 @@ export interface AvatarProps {
   avatarRef?: React.MutableRefObject<Image | null>;
   name: string;
   avatar: ImageData;
-  isHighlighted?: boolean;
+  isTargetedChoice?: boolean;
   isActive?: boolean;
   style?: StyleProp<ImageStyle>;
 }
@@ -24,16 +24,34 @@ export function Avatar({
   avatarRef,
   name,
   avatar,
-  isHighlighted = false,
+  isTargetedChoice,
   isActive = false,
   style,
 }: AvatarProps) {
   const scale = useRef(new Animated.Value(1)).current;
-  const shadowOpacity = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const shadowOpacity = useRef(new Animated.Value(1)).current;
 
   const windowSize = useWindowSize();
   const avatarSize = windowSize.large ? 80 : windowSize.medium ? 60 : 50;
+
+  useEffect(() => {
+    if (isTargetedChoice) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(scale, {
+            toValue: 1.3,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [isTargetedChoice, scale]);
 
   useEffect(() => {
     if (isActive) {
@@ -48,13 +66,8 @@ export function Avatar({
           duration: 300,
           useNativeDriver: true,
         }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
       ]).start();
-    } else {
+    } else if (!isTargetedChoice) {
       Animated.parallel([
         Animated.timing(scale, {
           toValue: 1,
@@ -66,14 +79,9 @@ export function Avatar({
           duration: 300,
           useNativeDriver: true,
         }),
-        Animated.timing(opacity, {
-          toValue: isHighlighted ? 0.5 : 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
       ]).start();
     }
-  }, [isActive, scale, shadowOpacity, opacity, isHighlighted]);
+  }, [isActive, isTargetedChoice, scale, shadowOpacity]);
 
   return (
     <View style={styles.container}>
@@ -81,7 +89,6 @@ export function Avatar({
         style={{
           transform: [{ scale }],
           shadowOffset: { width: 0, height: 10 },
-          opacity,
           shadowOpacity: shadowOpacity.interpolate({
             inputRange: [0, 1],
             outputRange: [0, 0.5],
@@ -97,6 +104,7 @@ export function Avatar({
             {
               width: avatarSize,
               height: avatarSize,
+              borderWidth: 2,
               borderRadius: avatarSize / 2,
               top: windowSize.large ? 20 : windowSize.medium ? 15 : 12,
             },

@@ -62,12 +62,9 @@ export const Card = ({
 
   return (
     <View style={[styles.cardContainer, style]}>
-      {/* Back of the card */}
       <Animated.View style={[styles.card, backAnimatedStyle]}>
         <Image source={backCardImage} style={styles.cardImage} />
       </Animated.View>
-
-      {/* Front of the card */}
       {card && (
         <Animated.View style={[styles.card, frontAnimatedStyle]}>
           <Image
@@ -97,5 +94,6 @@ const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     height: '100%',
+    elevation: 50,
   },
 });

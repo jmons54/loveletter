@@ -34,6 +34,11 @@ export default {
   applyEffectCountess: 'Do you think I am bluffing?',
   applyEffectEliminated: 'I lost!',
   applyEffectGuardError: "I don't have {{card}}",
+  modalGuard: {
+    title: 'Which card does {{playerName}} have?',
+    success: 'Well done! You guessed the card.',
+    fail: 'Too bad! You guessed wrong.',
+  },
   cards: {
     spy: 'a spy',
     guard: 'a guard',

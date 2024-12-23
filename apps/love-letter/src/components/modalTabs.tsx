@@ -1,13 +1,6 @@
-import { ReactNode } from 'react';
-import {
-  Modal,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import React, { ReactNode } from 'react';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { CloseModal } from './closeModal';
 
 interface ModalTabsProps<T extends string> {
   isVisible: boolean;
@@ -31,12 +24,8 @@ export function ModalTabs<T extends string>({
 }: ModalTabsProps<T>) {
   return (
     <Modal visible={isVisible} animationType="slide" onRequestClose={onClose}>
-      <StatusBar backgroundColor={'#000'} />
       <View style={styles.container}>
-        <Pressable style={styles.closeIcon} onPress={onClose}>
-          <Icon name="close" size={24} color="#fff" />
-        </Pressable>
-
+        <CloseModal onPress={onClose} />
         <View style={styles.tabHeader}>
           {tabs.map(({ name, text }) => (
             <Pressable
@@ -60,15 +49,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#000000',
-  },
-  closeIcon: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    zIndex: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 15,
-    padding: 8,
   },
   tabHeader: {
     flexDirection: 'row',

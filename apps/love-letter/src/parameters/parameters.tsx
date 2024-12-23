@@ -1,14 +1,15 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { GameParametersType } from '../types/gameType';
 import { NumberOfPlayersSelector } from './numberOfPlayersSelector';
 import { GameSettings } from './gameSettings';
 import {
-  pauseMusic,
+  pauseCurrentMusic,
   playSound,
-  resumeMusic,
+  resumeCurrentMusic,
   setMusicEnabled,
   setSoundEnabled,
 } from '../utils/sound';
+import { Button } from '../components/button';
 import i18n from '@i18n';
 
 interface ParametersProps {
@@ -38,9 +39,9 @@ export function Parameters({ value, onChange, startNewGame }: ParametersProps) {
         }}
       />
       <View style={styles.container}>
-        <TouchableOpacity onPress={startNewGame} style={styles.button}>
+        <Button onPress={startNewGame}>
           <Text style={styles.buttonText}>{i18n.t('startNewGame')}</Text>
-        </TouchableOpacity>
+        </Button>
       </View>
       <GameSettings
         isAutoPlay={value.autoPlay}
@@ -50,7 +51,7 @@ export function Parameters({ value, onChange, startNewGame }: ParametersProps) {
         }}
         isSoundEnabled={value.soundEnabled}
         toggleSound={() => {
-          playSound('click');
+          if (!value.soundEnabled) playSound('click');
           handleChange({ soundEnabled: !value.soundEnabled });
           setSoundEnabled(!value.soundEnabled);
         }}
@@ -59,9 +60,9 @@ export function Parameters({ value, onChange, startNewGame }: ParametersProps) {
           playSound('click');
           handleChange({ musicEnabled: !value.musicEnabled });
           if (value.musicEnabled) {
-            await pauseMusic();
+            await pauseCurrentMusic();
           } else {
-            await resumeMusic();
+            await resumeCurrentMusic();
           }
           setMusicEnabled(!value.musicEnabled);
         }}
@@ -73,13 +74,6 @@ export function Parameters({ value, onChange, startNewGame }: ParametersProps) {
 const styles = StyleSheet.create({
   container: {
     marginBottom: 100,
-    alignItems: 'center',
-  },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    backgroundColor: '#28a745',
-    borderRadius: 5,
     alignItems: 'center',
   },
   buttonText: {

@@ -120,8 +120,6 @@ export const GameCards = forwardRef(
 
       const isUser = player.id === user.id;
 
-      playSound(isUser ? 'cardFlip' : 'cardMove');
-
       const zIndex =
         gameCards.find((card) => card.player?.id === player.id)?.zIndex ?? 100;
 
@@ -135,6 +133,7 @@ export const GameCards = forwardRef(
       gameCard.initialTranslateY = toY;
 
       Animated.delay(delay).start(() => {
+        playSound(isUser ? 'cardFlip' : 'cardMove');
         setGameCards(updatedCards);
         const playerCards = updatedCards.filter(
           (card) => card.player?.id === player.id && card.isDistributed
@@ -264,10 +263,9 @@ export const GameCards = forwardRef(
         return indexA - indexB;
       });
 
-      playSound('cardMove');
-
       return new Promise<void>((resolve) => {
         Animated.delay(500).start(() => {
+          playSound('cardMove');
           playedCard.zIndex =
             101 + deckOrder.findIndex((card) => card.id === playedCard.card.id);
           playedCard.player = null;

@@ -1,10 +1,11 @@
 import React, {
-  forwardRef, memo,
+  forwardRef,
+  memo,
   useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
-  useState
+  useState,
 } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import type { GameCard, GameCardAnimated } from '../types/gameCard';
@@ -165,8 +166,8 @@ export const RemainingCards = memo(
                   borderRadius: windowSize.large
                     ? 10
                     : windowSize.medium
-                      ? 4
-                      : 2,
+                    ? 4
+                    : 2,
                 },
               ]}
             ></View>
@@ -185,7 +186,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     position: 'absolute',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
     zIndex: 1,
     left: 0,
     right: 0,

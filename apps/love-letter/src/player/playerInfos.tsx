@@ -2,16 +2,18 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { View, Image, StyleSheet, Animated } from 'react-native';
 import { PlayerEntity } from '@offline';
 import { TouchableAvatar } from './touchableAvatar';
-import { primaryColor } from '../utils/color';
+import { primaryColor, secondaryColor } from '../utils/color';
 import { playSound } from '../utils/sound';
 import spy from '../../assets/spy.png';
 import handmaid from '../../assets/handmaid.png';
 import { useWindowSize } from '../hook/useWindowSize';
+import { getAvatar } from '../utils/avatar';
 
 interface PlayerInfosProps {
   player: PlayerEntity;
   hasSpy: boolean;
-  target?: (player: PlayerEntity) => void;
+  onTarget?: (playerId: number) => void;
+  isTargetedChoice?: boolean;
   isActive: boolean;
   isHighlighted: boolean;
   isTargeted: boolean;
@@ -20,7 +22,8 @@ interface PlayerInfosProps {
 export function PlayerInfos({
   player,
   hasSpy,
-  target,
+  onTarget,
+  isTargetedChoice,
   isActive,
   isHighlighted,
   isTargeted,
@@ -29,8 +32,8 @@ export function PlayerInfos({
   const shadowOpacity = useRef(new Animated.Value(0)).current;
 
   const animated = useMemo(
-    () => isActive || isTargeted || isHighlighted || !!target,
-    [isActive, isTargeted, isHighlighted, target]
+    () => isActive || isTargeted || isHighlighted,
+    [isActive, isTargeted, isHighlighted]
   );
 
   useEffect(() => {
@@ -59,16 +62,21 @@ export function PlayerInfos({
     }
   }, [animated, scale, shadowOpacity]);
 
-  const color = isTargeted ? '#E57373' : primaryColor;
+  const color =
+    isTargeted || isTargetedChoice
+      ? '#E57373'
+      : isActive
+      ? primaryColor
+      : secondaryColor;
 
   const props = {
     name: player.name,
-    avatar: player.avatar as ImageData,
+    avatar: getAvatar(player.avatar as number),
+    isTargetedChoice,
     isActive: animated,
     style: {
       shadowColor: color,
       borderColor: color,
-      borderWidth: 2,
     },
   };
 
@@ -82,9 +90,9 @@ export function PlayerInfos({
       <TouchableAvatar
         {...props}
         onClick={() => {
-          if (target) {
+          if (isTargetedChoice) {
             playSound('click');
-            target?.(player);
+            onTarget?.(player.id);
           }
         }}
       />
