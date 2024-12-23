@@ -35,7 +35,6 @@ export function ModalGuard({
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
   const [result, setResult] = useState<'success' | 'fail' | null>(null);
 
-  // Animations
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const messageOpacity = useRef(new Animated.Value(0)).current;
   const messageScale = useRef(new Animated.Value(1)).current;
@@ -95,6 +94,7 @@ export function ModalGuard({
 
   const onClose = () => {
     if (selectedCard) {
+      setSelectedCard(null);
       onSelect(selectedCard.value);
     }
   };

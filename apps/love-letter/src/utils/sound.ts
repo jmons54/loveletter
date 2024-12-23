@@ -104,27 +104,18 @@ export function playMusic(musicName: MusicName) {
     .then(() => {
       currentMusics.set(musicName, music as Audio.Sound);
       return music?.getStatusAsync();
-    })
-    .then((status) => {
-      console.log(status);
-      if (status?.isLoaded && status.didJustFinish) {
-        return music?.replayAsync();
-      }
     });
 }
 
 export async function resumeMusic(musicName: MusicName) {
+  currentMusic = musicName;
   if (!currentMusics.has(musicName)) {
     playMusic(musicName);
   } else {
     const music = currentMusics.get(musicName);
     const status = await music?.getStatusAsync();
     if (status?.isLoaded && !status.isPlaying) {
-      await music?.playAsync().then((status) => {
-        if (status?.isLoaded && status.didJustFinish) {
-          return music?.replayAsync();
-        }
-      });
+      await music?.playAsync();
     }
   }
 }
@@ -160,5 +151,5 @@ export async function resumeCurrentMusic() {
 
 export async function pauseCurrentMusic() {
   if (!currentMusic) return;
-  await stopMusic(currentMusic);
+  await pauseMusic(currentMusic);
 }

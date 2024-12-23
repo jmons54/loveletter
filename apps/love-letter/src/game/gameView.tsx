@@ -266,6 +266,7 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
       playerId: targetedPlayer,
     });
     setGame({ ...game });
+    setTargetedPlayer(null);
     setModalGuardIsVisible(false);
     await resumeMusic('game');
     await sendCardToPlayed(currentCardId);
