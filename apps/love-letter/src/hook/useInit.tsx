@@ -5,6 +5,8 @@ import { avatars, getRandomAvatar } from '../utils/avatar';
 import { useFonts } from 'expo-font';
 import AmaticSC from '../../assets/fonts/AmaticSC-Regular.ttf';
 import AmaticSCBold from '../../assets/fonts/AmaticSC-Bold.ttf';
+import Fredoka from '../../assets/fonts/Fredoka-Regular.ttf';
+import FredokaBold from '../../assets/fonts/Fredoka-Bold.ttf';
 import * as NavigationBar from 'expo-navigation-bar';
 import { getGameParametersData, getUserData } from '../utils/storage';
 import { setMusicEnabled, setSoundEnabled } from '../utils/sound';
@@ -20,6 +22,8 @@ export function useInit(game: GameEntity | null) {
   useFonts({
     AmaticSC,
     AmaticSCBold,
+    Fredoka,
+    FredokaBold,
   });
 
   useEffect(() => {

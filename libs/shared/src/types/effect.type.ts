@@ -25,6 +25,6 @@ export interface EffectResponse {
   targetPlayerSwapCard?: CardValue;
   baronEqualityCardValue?: CardValue;
   potentialCardValues?: CardValue[];
-  playerEliminatedId?: number;
-  playerEliminatedCardValue?: CardValue;
+  eliminatedPlayerId?: number;
+  eliminatedCardValue?: CardValue;
 }

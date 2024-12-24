@@ -153,8 +153,8 @@ export function applyGuardEffect(
       effectResponse.targetPlayerId = player.id;
     }
     if (player && player.hand[0].value === params.value) {
-      effectResponse.playerEliminatedId = player.id;
-      effectResponse.playerEliminatedCardValue = params.value;
+      effectResponse.eliminatedPlayerId = player.id;
+      effectResponse.eliminatedCardValue = params.value;
       eliminatePlayer(player, apply);
     }
   }
@@ -200,15 +200,15 @@ export function applyBaronEffect(
     const remainingCards = getRemainingCards(game);
     const currentPlayerCardValue = currentPlayer.hand[0].value;
     const playerCardValue = player.hand[0].value;
-    let playerEliminatedId: number | null = null;
-    let playerEliminatedCardValue: CardValue | null = null;
+    let eliminatedPlayerId: number | null = null;
+    let eliminatedCardValue: CardValue | null = null;
     if (currentPlayerCardValue > playerCardValue) {
-      playerEliminatedId = player.id;
-      playerEliminatedCardValue = playerCardValue;
+      eliminatedPlayerId = player.id;
+      eliminatedCardValue = playerCardValue;
       eliminatePlayer(player, apply);
     } else if (currentPlayerCardValue < playerCardValue) {
-      playerEliminatedId = currentPlayer.id;
-      playerEliminatedCardValue = currentPlayerCardValue;
+      eliminatedPlayerId = currentPlayer.id;
+      eliminatedCardValue = currentPlayerCardValue;
       eliminatePlayer(currentPlayer, apply);
     } else {
       effectResponse.baronEqualityCardValue = currentPlayer.hand[0].value;
@@ -220,9 +220,9 @@ export function applyBaronEffect(
           remainingCards.filter((card) => card.value === value).length >= 2
       ) as CardValue[];
     }
-    if (playerEliminatedId !== null && playerEliminatedCardValue !== null) {
-      effectResponse.playerEliminatedId = playerEliminatedId;
-      effectResponse.playerEliminatedCardValue = playerEliminatedCardValue;
+    if (eliminatedPlayerId !== null && eliminatedCardValue !== null) {
+      effectResponse.eliminatedPlayerId = eliminatedPlayerId;
+      effectResponse.eliminatedCardValue = eliminatedCardValue;
       effectResponse.potentialCardValues = remainingCards
         .filter((card) => card.value > playerCardValue)
         .map((c) => c.value);
@@ -247,8 +247,8 @@ export function applyPrinceEffect(
   const discardedCard = player.hand[0];
 
   if (discardedCard && discardedCard.value === 9) {
-    effectResponse.playerEliminatedId = player.id;
-    effectResponse.playerEliminatedCardValue = 9;
+    effectResponse.eliminatedPlayerId = player.id;
+    effectResponse.eliminatedCardValue = 9;
     eliminatePlayer(player, apply);
   } else if (apply) {
     player.hand = [];

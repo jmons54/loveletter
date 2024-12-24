@@ -15,6 +15,7 @@ import { getCardDimensionsFromWindowSize } from '../utils/card';
 import { useWindowSize } from '../hook/useWindowSize';
 import i18n from '@i18n';
 import { CloseModal } from './closeModal';
+import { primaryColor } from '../utils/color';
 
 interface ModalEffectProps {
   isVisible: boolean;
@@ -39,12 +40,14 @@ export function ModalGuard({
   const messageOpacity = useRef(new Animated.Value(0)).current;
   const messageScale = useRef(new Animated.Value(1)).current;
 
-  const filteredCards = cards.map((card) => {
-    const count =
-      playedCards?.filter((c) => c.value === card.value).length ?? 0;
-    const disabled = card.value === 1;
-    return { ...card, count, disabled };
-  });
+  const filteredCards = cards
+    .filter(({ value }) => value !== 1)
+    .map((card) => {
+      const count =
+        playedCards?.filter((c) => c.value === card.value).length ?? 0;
+      const disabled = card.value === 1;
+      return { ...card, count, disabled };
+    });
 
   useEffect(() => {
     if (selectedCard) {
@@ -101,6 +104,8 @@ export function ModalGuard({
 
   const color = result === 'success' ? '#4CAF50' : '#FFC107';
 
+  const cardDimensions = getCardDimensionsFromWindowSize(windowSize);
+
   return (
     <Modal visible={isVisible} onRequestClose={onClose}>
       {selectedCard && <CloseModal onPress={onClose} />}
@@ -148,13 +153,18 @@ export function ModalGuard({
                 playerName,
               })}
             </Text>
-            <View style={styles.cardsGrid}>
+            <View
+              style={[
+                styles.cardsGrid,
+                { width: (cardDimensions.width + 5) * 3 },
+              ]}
+            >
               {filteredCards.map((card) => (
                 <Pressable
                   key={card.value}
                   style={[
                     { transform: [{ scale: 0.8 }] },
-                    getCardDimensionsFromWindowSize(windowSize),
+                    cardDimensions,
                     card.disabled && styles.disabledCard,
                   ]}
                   onPress={() => !card.disabled && handleCardSelect(card)}
@@ -222,18 +232,20 @@ const styles = StyleSheet.create({
   },
   cardCount: {
     position: 'absolute',
-    top: '65%',
-    left: '50%',
-    transform: [{ translateX: -20 }, { translateY: -20 }],
-    width: 40,
-    height: 40,
+    top: 2,
+    right: 2,
+    width: 24,
+    height: 24,
     borderRadius: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: primaryColor,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1,
   },
   cardCountText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    position: 'absolute',
+    top: -1,
+    fontSize: 20,
+    fontFamily: 'FredokaBold',
   },
 });

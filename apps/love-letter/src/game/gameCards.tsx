@@ -132,17 +132,17 @@ export const GameCards = forwardRef(
         )?.zIndex ?? 100;
 
       const updatedCards = [...gameCards];
-      const gameCard = updatedCards[cardIndex];
-      gameCard.isDistributed = true;
-      gameCard.player = player;
-      gameCard.zIndex = zIndex + 1;
-      gameCard.flipped = isUser;
-      gameCard.initialTranslateX = toX;
-      gameCard.initialTranslateY = toY;
+      updatedCards[cardIndex].isDistributed = true;
+      updatedCards[cardIndex].player = player;
+      updatedCards[cardIndex].zIndex = zIndex + 1;
+      updatedCards[cardIndex].flipped = isUser;
+      updatedCards[cardIndex].initialTranslateX = toX;
+      updatedCards[cardIndex].initialTranslateY = toY;
 
       Animated.delay(delay).start(() => {
         playSound(isUser ? 'cardFlip' : 'cardMove');
         setGameCards(updatedCards);
+        const gameCard = updatedCards[cardIndex];
         const playerCards = updatedCards.filter(
           (card) =>
             card.player?.id === player.id &&
@@ -204,7 +204,7 @@ export const GameCards = forwardRef(
     }) => {
       const updatedCards = [...gameCards];
       const gameCard = updatedCards[cardIndex];
-      updatedCards[cardIndex].zIndex = 210;
+      updatedCards[cardIndex].zIndex = 150;
       updatedCards[cardIndex].flipped = true;
       setGameCards(updatedCards);
 
@@ -304,11 +304,11 @@ export const GameCards = forwardRef(
 
       return new Promise<void>((resolve) => {
         Animated.delay(500).start(() => {
-          playSound('cardMove');
           playedCard.zIndex =
-            101 + deckOrder.findIndex((card) => card.id === playedCard.card.id);
+            300 + deckOrder.findIndex((card) => card.id === playedCard.card.id);
           playedCard.player = null;
           setGameCards(updatedCards);
+          playSound('cardMove');
 
           if (!windowSize.large) {
             Animated.timing(playedCard.scale, {

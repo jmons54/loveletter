@@ -993,7 +993,7 @@ export function shouldDiscardAfterBaronEquality(
     const history = histories[i];
     if (
       history.effect?.name === 'baron' &&
-      !history.effect.playerEliminatedId
+      !history.effect.eliminatedPlayerId
     ) {
       const player1Id = history.playerId;
       const player2Id = history.effect.targetPlayerId;
@@ -1021,15 +1021,14 @@ export function shouldDiscardAfterBaronWinner(
     const history = histories[i];
     if (
       history.effect?.name !== 'baron' &&
-      history.effect?.playerEliminatedId === undefined
+      history.effect?.eliminatedPlayerId === undefined
     ) {
       continue;
     }
     const player1Id = history.playerId;
     const player2Id = history.effect.targetPlayerId;
     if (player.id === player1Id || player.id === player2Id) {
-      const loserCardValue = history.effect
-        .playerEliminatedCardValue as CardValue;
+      const loserCardValue = history.effect.eliminatedCardValue as CardValue;
       const cards = player.hand.filter(
         (handCard) => handCard.value > loserCardValue
       );
@@ -1324,10 +1323,9 @@ export function deduceFromBaronWinner(game: GameType): DeduceFromBaron | null {
     const history = histories[i];
     if (
       history.effect?.name === 'baron' &&
-      history.effect.playerEliminatedId !== undefined
+      history.effect.eliminatedPlayerId !== undefined
     ) {
-      const loserCardValue = history.effect
-        .playerEliminatedCardValue as CardValue;
+      const loserCardValue = history.effect.eliminatedCardValue as CardValue;
       const target = game.players.find(
         (p) => p.id === history.playerId
       ) as PlayerType;
@@ -1357,7 +1355,7 @@ export function deduceFromBaronEquality(
     const history = histories[i];
     if (
       history.effect?.name === 'baron' &&
-      history.effect.playerEliminatedId !== undefined
+      history.effect.eliminatedPlayerId !== undefined
     ) {
       const player1 = game.players.find(
         (p) => p.id === history.playerId

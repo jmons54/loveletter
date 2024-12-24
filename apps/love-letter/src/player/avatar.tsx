@@ -54,6 +54,7 @@ export function Avatar({
   }, [isTargetedChoice, scale]);
 
   useEffect(() => {
+    if (isTargetedChoice) return;
     if (isActive) {
       Animated.parallel([
         Animated.timing(scale, {
@@ -67,7 +68,7 @@ export function Avatar({
           useNativeDriver: true,
         }),
       ]).start();
-    } else if (!isTargetedChoice) {
+    } else {
       Animated.parallel([
         Animated.timing(scale, {
           toValue: 1,
