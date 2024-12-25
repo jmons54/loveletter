@@ -21,10 +21,16 @@ import {
 } from '@shared';
 import { RemainingCards, RemainingCardsHandle } from './remainingCards';
 import { useWindowSize } from '../hook/useWindowSize';
-import { calculatePlayerPositions } from '../utils/position';
+import { calculatePlayersPositions } from '../utils/position';
 import { useInitGame } from '../hook/useInitGame';
 import { pauseMusic, playMusic, resumeMusic, stopMusic } from '../utils/sound';
 import { ModalGuard } from '../components/modalGuard';
+
+export type NextActionType =
+  | 'playBot'
+  | 'playCard'
+  | 'playChancellorEffect'
+  | null;
 
 interface GameViewProps {
   user: UserType;
@@ -41,9 +47,7 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
   const playerContainerRef = useRef<View | null>(null);
 
   const [playedCards, setPlayedCards] = useState<GameCard[]>([]);
-  const [nextAction, setNextAction] = useState<'playBot' | 'playCard' | null>(
-    null
-  );
+  const [nextAction, setNextAction] = useState<NextActionType>(null);
   const [targetedPlayer, setTargetedPlayer] = useState<number | null>(null);
   const [targetedChoices, setTargetedChoices] = useState<number[] | null>(null);
   const [modalGuardIsVisible, setModalGuardIsVisible] = useState(false);
@@ -56,7 +60,7 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
   }, [isGamePaused]);
 
   const players = useMemo(() => game.players, [game.players]);
-  const playerPositions = calculatePlayerPositions(players.length);
+  const playersPositions = calculatePlayersPositions(players.length);
 
   const waitForResume = async (): Promise<void> => {
     while (isGamePausedRef.current) {
@@ -87,7 +91,7 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
     ) => {
       await waitForResume();
       return new Promise<void>((resolve) => {
-        const { top, left } = playerPositions[playerIndex];
+        const { top, left } = playersPositions[playerIndex];
         const toX = (left / 100) * w - w / 2;
         const toY = (top / 100) * h - h / 2;
         gameCardsRef.current?.distributeCardToPlayer({
@@ -102,7 +106,7 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
         });
       });
     },
-    [playerPositions, players]
+    [playersPositions, players]
   );
 
   const distributeCardToPlayerFromContainer = useCallback(
@@ -137,11 +141,11 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
       await waitForResume();
       const { card } = determineCardForBotPlayer(player, game);
       await gameCardsRef.current?.botPlayCard(card.id as string);
-      GameService.playCard(
+      GameService.playCard({
         game,
-        player,
-        player.hand.findIndex((c) => c.id === card.id)
-      );
+        currentPlayer: player,
+        cardIndex: player.hand.findIndex((c) => c.id === card.id),
+      });
       setGame({ ...game });
       await sendCurrentCardToPlayed(card.id as string);
     }, 500);
@@ -162,6 +166,8 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
       playMusic('game');
       GameService.initRound(game);
       setGame({ ...game });
+      const index = game.deck.findIndex((card) => card.value === 6);
+      game.deck[game.deck.length - 3] = game.deck.splice(index, 1)[0];
       gameCardsRef.current?.shuffleCards({
         cards: game.deck,
         async onComplete() {
@@ -220,7 +226,9 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
       (!validPlayersIds.length && currentEffect?.name !== 'chancellor') ||
       (!game.deck.length && currentEffect?.name === 'chancellor')
     ) {
-      GameService.playEffect(game);
+      GameService.playEffect({
+        game,
+      });
       setGame({ ...game });
       await sendCurrentCardToPlayed(cardId);
       return;
@@ -238,7 +246,10 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
         break;
       }
       case 'chancellor': {
-        const cards = GameService.drawCardsEffect(game, 2);
+        const cards = GameService.drawCardsEffect({
+          game,
+          number: 2,
+        });
         for (let i = 0; i < cards.length; i++) {
           await distributeCardToPlayerFromContainer(
             game.turn as number,
@@ -246,21 +257,26 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
             cardId
           );
         }
+        setNextAction('playChancellorEffect');
         break;
       }
     }
   };
 
-  const onPlayCard = async (cardId: string) => {
-    const player = players.find((p) => p.id === user.id) as PlayerEntity;
-    const cardIndex = player?.hand.findIndex(
+  const handlePlayCard = async (cardId: string) => {
+    const currentPlayer = players.find((p) => p.id === user.id) as PlayerEntity;
+    const cardIndex = currentPlayer?.hand.findIndex(
       (card) => card.id === cardId
     ) as number;
-    GameService.playCard(game, player, cardIndex);
+    GameService.playCard({
+      game,
+      currentPlayer,
+      cardIndex,
+    });
     setGame({ ...game });
-    if (player.currentEffect) {
+    if (currentPlayer.currentEffect) {
       setCurrentCardId(cardId);
-      await handleEffect(cardId, player.currentEffect);
+      await handleEffect(cardId, currentPlayer.currentEffect);
     } else {
       await sendCurrentCardToPlayed(cardId);
     }
@@ -270,70 +286,97 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
     setTargetedChoices(null);
     setTargetedPlayer(playerId);
     const player = players.find((p) => p.id === user.id) as PlayerEntity;
-    const currentEffectName = player.currentEffect?.name;
-    if (currentEffectName === 'guard') {
+    if (player.currentEffect?.name === 'guard') {
       setModalGuardIsVisible(true);
     } else {
       const targetedPlayer = players.find(
         (p) => p.id === playerId
       ) as PlayerEntity;
-      await applyEffectTargeted(targetedPlayer, currentEffectName);
+      await applyEffectTargeted(player, targetedPlayer);
     }
   };
 
   const applyEffectTargeted = async (
-    targetedPlayer: PlayerEntity,
-    effectName?: CurrentEffectType['name']
+    player: PlayerEntity,
+    targetedPlayer: PlayerEntity
   ) => {
-    const [targetedCard] = targetedPlayer.hand;
-    const { eliminatedPlayerId } = GameService.playEffect(game, {
-      playerId: targetedPlayer.id,
+    const targetedCardId = targetedPlayer.hand[0].id as string;
+    const playerCardId = player.hand.find((c) => c.id !== currentCardId)
+      ?.id as string;
+    const currentEffectName = player.currentEffect?.name;
+    const { eliminatedPlayerId } = GameService.playEffect({
+      game,
+      params: {
+        playerId: targetedPlayer.id,
+      },
     }) as EffectResponse;
-    switch (effectName) {
+    switch (currentEffectName) {
       case 'priest': {
-        await gameCardsRef.current?.showCard(targetedCard.id as string);
-        await gameCardsRef.current?.hideCard(targetedCard.id as string);
+        await gameCardsRef.current?.showCard(targetedCardId);
+        await gameCardsRef.current?.hideCard(targetedCardId);
         break;
       }
       case 'baron': {
-        await gameCardsRef.current?.showCard(targetedCard.id as string);
+        await gameCardsRef.current?.showCard(targetedCardId as string);
         if (eliminatedPlayerId) {
-          const eliminatedPlayer = players.find(
-            (p) => p.id === eliminatedPlayerId
-          ) as PlayerEntity;
           const promises: Promise<void>[] = [
             sendCardToPlayed(
-              eliminatedPlayer.hand.find((c) => c.id !== currentCardId)
-                ?.id as string
+              eliminatedPlayerId === targetedPlayer.id
+                ? targetedCardId
+                : playerCardId
             ),
           ];
           if (eliminatedPlayerId !== targetedPlayer.id) {
             promises.push(
-              gameCardsRef.current?.hideCard(
-                targetedCard.id as string
-              ) as Promise<void>
+              gameCardsRef.current?.hideCard(targetedCardId) as Promise<void>
             );
           }
           await Promise.all(promises);
         } else {
-          await gameCardsRef.current?.hideCard(targetedCard.id as string);
+          await gameCardsRef.current?.hideCard(targetedCardId);
         }
         break;
       }
-      case 'prince':
-        await gameCardsRef.current?.showCard(targetedCard.id as string);
-        await sendCardToPlayed(targetedCard.id as string);
+      case 'prince': {
+        const isHimself = targetedPlayer.id === player.id;
+        if (!isHimself) {
+          await gameCardsRef.current?.showCard(targetedCardId);
+        }
+        await sendCardToPlayed(targetedCardId);
         if (!eliminatedPlayerId) {
-          GameService.drawCardsEffect(game, 1, true, targetedPlayer);
           await distributeCardToPlayerFromContainer(
             players.findIndex((p) => p.id === targetedPlayer.id),
             500,
-            targetedPlayer.id === user.id ? null : currentCardId
+            isHimself ? currentCardId : null
           );
         }
         break;
-      case 'king':
+      }
+      case 'king': {
+        const { w, h } = await getPlayerContainerSize();
+        const targetedPlayerIndex = players.findIndex(
+          (p) => p.id === targetedPlayer.id
+        );
+        const playerPositions = playersPositions[0];
+        const targetedPlayerPositions = playersPositions[targetedPlayerIndex];
+        await gameCardsRef.current?.swapCards(
+          {
+            isUser: true,
+            player,
+            toX: (playerPositions.left / 100) * w - w / 2,
+            toY: (playerPositions.top / 100) * h - h / 2,
+            cardId: targetedCardId,
+            currentCardId,
+          },
+          {
+            player: targetedPlayer,
+            toX: (targetedPlayerPositions.left / 100) * w - w / 2,
+            toY: (targetedPlayerPositions.top / 100) * h - h / 2,
+            cardId: playerCardId,
+          }
+        );
         break;
+      }
     }
     setGame({ ...game });
     await endOfEffect();
@@ -341,12 +384,27 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
 
   const handleSelectGuard = async (cardValue: CardValue) => {
     if (!targetedPlayer) return;
-    GameService.playEffect(game, {
-      value: cardValue,
-      playerId: targetedPlayer,
+    GameService.playEffect({
+      game,
+      params: {
+        value: cardValue,
+        playerId: targetedPlayer,
+      },
     });
     setGame({ ...game });
     setModalGuardIsVisible(false);
+    await endOfEffect();
+  };
+
+  const handChancellorEffect = async (cardId: string) => {
+    const currentPlayer = players.find((p) => p.id === user.id) as PlayerEntity;
+    GameService.playEffect({
+      game,
+      params: {
+        cardIndex: currentPlayer.hand.findIndex((c) => c.id === cardId),
+      },
+    });
+    setGame({ ...game });
     await endOfEffect();
   };
 
@@ -369,8 +427,8 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
               style={[
                 styles.playerContainer,
                 {
-                  top: `${playerPositions[index].top}%`,
-                  left: `${playerPositions[index].left}%`,
+                  top: `${playersPositions[index].top}%`,
+                  left: `${playersPositions[index].left}%`,
                 },
               ]}
             >
@@ -400,10 +458,11 @@ export function GameView({ user, game, isGamePaused, setGame }: GameViewProps) {
                 }
                 playedCards={playedCards}
                 setPlayedCards={setPlayedCards}
-                onPlayCard={onPlayCard}
+                onPlayCard={handlePlayCard}
+                onChancellorEffect={handChancellorEffect}
                 nextAction={nextAction}
                 setNextAction={setNextAction}
-                isGamePaused={isGamePaused}
+                currentCardId={currentCardId}
               />
             </View>
           </View>

@@ -5,6 +5,23 @@ import type { EffectParams } from '../types/effect.type';
 import { getShuffleDeck } from './card.util';
 import { applyEffect, handleEffect } from './effect.util';
 
+export interface PlayerCardProps {
+  game: GameType;
+  currentPlayer: PlayerType;
+  cardIndex: number;
+}
+export interface PlayEffectProps {
+  game: GameType;
+  params?: EffectParams;
+}
+
+export interface DrawCardEffectProps {
+  game: GameType;
+  number: number;
+  player?: PlayerType;
+  useAsideCard?: boolean;
+}
+
 export enum GameStatus {
   INITIALIZED = 'initialized',
   IN_PROGRESS = 'inProgress',
@@ -60,14 +77,14 @@ export function drawCard(game: GameType) {
   return drawnCard;
 }
 
-export function drawCardsEffect(
-  game: GameType,
-  number: number,
+export function drawCardsEffect({
+  game,
+  player,
+  number,
   useAsideCard = false,
-  currentPlayer?: PlayerType
-) {
-  if (!currentPlayer) {
-    currentPlayer = game.players[game.turn as number];
+}: DrawCardEffectProps) {
+  if (!player) {
+    player = game.players[game.turn as number];
   }
   let drawnCards = game.deck.slice(-number);
   if (useAsideCard && !drawnCards.length) {
@@ -76,7 +93,7 @@ export function drawCardsEffect(
   }
   if (drawnCards.length) {
     game.deck.splice(-drawnCards.length);
-    currentPlayer.hand.push(...drawnCards);
+    player.hand.push(...drawnCards);
   }
   return drawnCards;
 }
@@ -105,15 +122,12 @@ export function getCardIndexToPlay(
   return cardIndex;
 }
 
-export function playCard(
-  game: GameType,
-  currentPlayer: PlayerType,
-  cardIndex: number,
-  apply = true
-) {
-  const cardPlayed = currentPlayer.hand.splice(cardIndex, 1)[0];
-  currentPlayer.cardsPlayed.push(cardPlayed);
+export function playCard({ game, currentPlayer, cardIndex }: PlayerCardProps) {
+  cardIndex = getCardIndexToPlay(currentPlayer, cardIndex);
 
+  const cardPlayed = currentPlayer.hand.splice(cardIndex, 1)[0];
+
+  currentPlayer.cardsPlayed.push(cardPlayed);
   currentPlayer.isProtected = cardPlayed.value === 4;
 
   if (cardPlayed.value === 9) {
@@ -122,7 +136,7 @@ export function playCard(
       currentPlayer.cardsPlayed.push(currentPlayer.hand.pop() as CardType);
     }
   } else {
-    handleEffect(cardPlayed, game, currentPlayer, apply);
+    handleEffect(cardPlayed, game, currentPlayer);
   }
 
   currentPlayer.mustPlayCountess = false;
@@ -136,21 +150,14 @@ export function playCard(
   return cardPlayed;
 }
 
-export function playEffect(
-  game: GameType,
-  currentPlayer: PlayerType,
-  params?: EffectParams,
-  apply = true
-) {
-  const effectResponse = applyEffect(game, currentPlayer, params, apply);
-
+export function playEffect({ game, params }: PlayEffectProps) {
+  const currentPlayer = game.players[game.turn as number];
+  const effectResponse = applyEffect(game, currentPlayer, params);
   currentPlayer.currentEffect = null;
-
   game.histories?.push({
     playerId: currentPlayer.id,
     effect: effectResponse,
   });
-
   return effectResponse;
 }
 

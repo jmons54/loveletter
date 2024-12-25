@@ -3,18 +3,19 @@ import {
   checkEndOfRound,
   distributeInitialCards,
   drawCard,
+  DrawCardEffectProps,
   drawCardsEffect,
-  EffectParams,
   endOfRound,
   generateName,
   generateShortName,
-  getCardIndexToPlay,
   getNextTurn,
   getStartingPlayer,
   initRound,
   NumberOfPlayers,
   playCard,
   playEffect,
+  PlayEffectProps,
+  PlayerCardProps,
 } from '@shared';
 import { PlayerEntity } from '../entities/player.entity';
 import { GameEntity } from '../entities/game.entity';
@@ -71,27 +72,16 @@ export class GameService {
     return game.turn;
   }
 
-  static drawCardsEffect(
-    game: GameEntity,
-    number: number,
-    useAsideCard = false,
-    player?: PlayerEntity
-  ) {
-    return drawCardsEffect(game, number, useAsideCard, player);
+  static drawCardsEffect(props: DrawCardEffectProps) {
+    return drawCardsEffect(props);
   }
 
-  static playCard(
-    game: GameEntity,
-    currentPlayer: PlayerEntity,
-    cardIndex: number
-  ) {
-    cardIndex = getCardIndexToPlay(currentPlayer, cardIndex);
-    return playCard(game, currentPlayer, cardIndex, false);
+  static playCard(props: PlayerCardProps) {
+    return playCard(props);
   }
 
-  static playEffect(game: GameEntity, params?: EffectParams, apply = false) {
-    const currentPlayer = game.players[game.turn as number];
-    return playEffect(game, currentPlayer, params, apply);
+  static playEffect(props: PlayEffectProps) {
+    return playEffect(props);
   }
 
   static checkEndOfRound(game: GameEntity) {

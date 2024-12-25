@@ -9,11 +9,10 @@ import { WindowSize } from './useWindowSize';
 export function useShuffleCards(
   gameCards: GameCard[],
   isShuffling: boolean,
-  isGamePaused: boolean,
   onComplete: () => void
 ) {
   useEffect(() => {
-    if (gameCards.length && isShuffling && !isGamePaused) {
+    if (gameCards.length && isShuffling) {
       playSound('shuffle');
 
       animateCards(
@@ -32,9 +31,9 @@ export function useShuffleCards(
             }),
           ]),
         30,
-        () => {
-          stopSound('shuffle');
-          playSound('shuffle');
+        async () => {
+          await stopSound('shuffle');
+          await playSound('shuffle');
 
           animateCards(
             gameCards,
@@ -58,7 +57,7 @@ export function useShuffleCards(
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isShuffling, isGamePaused, gameCards]);
+  }, [isShuffling, gameCards]);
 
   return (cards: CardType[], windowSize: WindowSize) => {
     return [...cards].reverse().map((card, index) => ({

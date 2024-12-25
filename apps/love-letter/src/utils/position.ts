@@ -1,4 +1,4 @@
-export function calculatePlayerPositions(numPlayers: number) {
+export function calculatePlayersPositions(numPlayers: number) {
   const positions: { top: number; left: number }[] = [];
 
   const bottom = 90;

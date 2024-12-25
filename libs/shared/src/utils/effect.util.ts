@@ -2,130 +2,83 @@ import type { CardType, CardValue } from '../types/card.type';
 import type { GameType } from '../types/game.type';
 import type { PlayerType } from '../types/player.type';
 import type { EffectParams, EffectResponse } from '../types/effect.type';
-import { getCardsFromDeck, getRemainingCards } from './card.util';
+import { getRemainingCards } from './card.util';
 
 export function handleEffect(
   cardPlayed: CardType,
   game: GameType,
-  currentPlayer: PlayerType,
-  apply: boolean
+  currentPlayer: PlayerType
 ) {
   switch (cardPlayed.value) {
     case 1: {
-      handleGuardEffect(game, currentPlayer);
+      currentPlayer.currentEffect = {
+        name: 'guard',
+        validPlayersIds: getValidPlayersWithoutSelfIds(game, currentPlayer),
+      };
       break;
     }
     case 2: {
-      handlePriestEffect(game, currentPlayer);
+      currentPlayer.currentEffect = {
+        name: 'priest',
+        validPlayersIds: getValidPlayersWithoutSelfIds(game, currentPlayer),
+      };
       break;
     }
     case 3: {
-      handleBaronEffect(game, currentPlayer);
+      currentPlayer.currentEffect = {
+        name: 'baron',
+        validPlayersIds: getValidPlayersWithoutSelfIds(game, currentPlayer),
+      };
       break;
     }
     case 5: {
-      handlePrinceEffect(game, currentPlayer);
+      currentPlayer.currentEffect = {
+        name: 'prince',
+        validPlayersIds: getValidPlayersIds(game),
+      };
       break;
     }
     case 6: {
-      handleChancellorEffect(game, currentPlayer, apply);
+      currentPlayer.currentEffect = {
+        name: 'chancellor',
+      };
       break;
     }
     case 7: {
-      handleKingEffect(game, currentPlayer);
+      currentPlayer.currentEffect = {
+        name: 'king',
+        validPlayersIds: getValidPlayersWithoutSelf(game, currentPlayer).map(
+          (p) => p.id
+        ),
+      };
       break;
     }
   }
-}
-
-function handleGuardEffect(game: GameType, currentPlayer: PlayerType) {
-  currentPlayer.currentEffect = {
-    name: 'guard',
-    validPlayersIds: getValidPlayersWithoutSelfIds(game, currentPlayer),
-  };
-}
-
-function handlePriestEffect(game: GameType, currentPlayer: PlayerType) {
-  currentPlayer.currentEffect = {
-    name: 'priest',
-    validPlayersIds: getValidPlayersWithoutSelfIds(game, currentPlayer),
-  };
-}
-
-function handleBaronEffect(game: GameType, currentPlayer: PlayerType) {
-  currentPlayer.currentEffect = {
-    name: 'baron',
-    validPlayersIds: getValidPlayersWithoutSelfIds(game, currentPlayer),
-    required: true,
-  };
-}
-
-function handlePrinceEffect(game: GameType, currentPlayer: PlayerType) {
-  currentPlayer.currentEffect = {
-    name: 'prince',
-    validPlayersIds: getValidPlayersIds(game),
-    required: true,
-  };
-}
-
-export function handleChancellorEffect(
-  game: GameType,
-  currentPlayer: PlayerType,
-  apply: boolean
-) {
-  const drawnCards = getCardsFromDeck(game, 2);
-  if (drawnCards.length) {
-    currentPlayer.currentEffect = {
-      name: 'chancellor',
-      required: true,
-    };
-    if (apply) {
-      game.deck.splice(-drawnCards.length);
-      currentPlayer.hand.push(...drawnCards);
-    }
-  }
-  return drawnCards;
-}
-
-function handleKingEffect(game: GameType, currentPlayer: PlayerType) {
-  currentPlayer.currentEffect = {
-    name: 'king',
-    validPlayersIds: getValidPlayersWithoutSelf(game, currentPlayer).map(
-      (p) => p.id
-    ),
-    required: true,
-  };
 }
 
 export function applyEffect(
   game: GameType,
   currentPlayer: PlayerType,
-  params?: EffectParams,
-  apply = true
+  params?: EffectParams
 ) {
   let effectResponse: EffectResponse | null = null;
 
   if (params) {
     switch (currentPlayer.currentEffect?.name) {
       case 'guard':
-        effectResponse = applyGuardEffect(game, currentPlayer, params, apply);
+        effectResponse = applyGuardEffect(game, currentPlayer, params);
         break;
       case 'priest':
         effectResponse = applyPriestEffect(game, currentPlayer, params);
         break;
       case 'baron':
-        effectResponse = applyBaronEffect(game, currentPlayer, params, apply);
+        effectResponse = applyBaronEffect(game, currentPlayer, params);
         break;
       case 'prince':
-        effectResponse = applyPrinceEffect(game, currentPlayer, params, apply);
+        effectResponse = applyPrinceEffect(game, currentPlayer, params);
         break;
       case 'chancellor':
-        effectResponse = applyChancellorEffect(
-          game,
-          currentPlayer,
-          params,
-          apply
-        );
+        effectResponse = applyChancellorEffect(game, currentPlayer, params);
         break;
       case 'king':
         effectResponse = applyKingEffect(game, currentPlayer, params);
@@ -139,8 +92,7 @@ export function applyEffect(
 export function applyGuardEffect(
   game: GameType,
   currentPlayer: PlayerType,
-  params: EffectParams,
-  apply: boolean
+  params: EffectParams
 ) {
   const effectResponse: EffectResponse = {
     name: 'guard',
@@ -155,7 +107,7 @@ export function applyGuardEffect(
     if (player && player.hand[0].value === params.value) {
       effectResponse.eliminatedPlayerId = player.id;
       effectResponse.eliminatedCardValue = params.value;
-      eliminatePlayer(player, apply);
+      eliminatePlayer(player);
     }
   }
 
@@ -183,8 +135,7 @@ export function applyPriestEffect(
 export function applyBaronEffect(
   game: GameType,
   currentPlayer: PlayerType,
-  params: EffectParams,
-  apply: boolean
+  params: EffectParams
 ): EffectResponse {
   const effectResponse: EffectResponse = {
     name: 'baron',
@@ -205,11 +156,11 @@ export function applyBaronEffect(
     if (currentPlayerCardValue > playerCardValue) {
       eliminatedPlayerId = player.id;
       eliminatedCardValue = playerCardValue;
-      eliminatePlayer(player, apply);
+      eliminatePlayer(player);
     } else if (currentPlayerCardValue < playerCardValue) {
       eliminatedPlayerId = currentPlayer.id;
       eliminatedCardValue = currentPlayerCardValue;
-      eliminatePlayer(currentPlayer, apply);
+      eliminatePlayer(currentPlayer);
     } else {
       effectResponse.baronEqualityCardValue = currentPlayer.hand[0].value;
       effectResponse.potentialCardValues = Array.from(
@@ -234,8 +185,7 @@ export function applyBaronEffect(
 export function applyPrinceEffect(
   game: GameType,
   currentPlayer: PlayerType,
-  params: EffectParams,
-  apply: boolean
+  params: EffectParams
 ): EffectResponse {
   const effectResponse: EffectResponse = {
     name: 'prince',
@@ -249,8 +199,8 @@ export function applyPrinceEffect(
   if (discardedCard && discardedCard.value === 9) {
     effectResponse.eliminatedPlayerId = player.id;
     effectResponse.eliminatedCardValue = 9;
-    eliminatePlayer(player, apply);
-  } else if (apply) {
+    eliminatePlayer(player);
+  } else {
     player.hand = [];
     player.cardsPlayed.push(discardedCard);
     const newCard = game.deck.pop();
@@ -267,8 +217,7 @@ export function applyPrinceEffect(
 export function applyChancellorEffect(
   game: GameType,
   currentPlayer: PlayerType,
-  params: EffectParams,
-  apply: boolean
+  params: EffectParams
 ) {
   const effectResponse: EffectResponse = {
     name: 'chancellor',
@@ -283,19 +232,11 @@ export function applyChancellorEffect(
 
   effectResponse.chosenCard = chosenCard.value;
 
-  if (apply) {
-    currentPlayer.hand = currentPlayer.hand.filter(
-      (card) => card !== chosenCard
-    );
-    const remainingCards = currentPlayer.hand;
-    effectResponse.remainingCards = { ...remainingCards };
-    game.deck.unshift(...remainingCards);
-    currentPlayer.hand = [chosenCard];
-  } else {
-    effectResponse.remainingCards = {
-      ...currentPlayer.hand.filter((card) => card !== chosenCard),
-    };
-  }
+  currentPlayer.hand = currentPlayer.hand.filter((card) => card !== chosenCard);
+  const remainingCards = currentPlayer.hand;
+  effectResponse.remainingCards = { ...remainingCards };
+  game.deck.unshift(...remainingCards);
+  currentPlayer.hand = [chosenCard];
   return effectResponse;
 }
 
@@ -374,12 +315,10 @@ export function getValidPlayersWithoutSelfIds(
   );
 }
 
-function eliminatePlayer(player: PlayerType, apply: boolean) {
-  if (apply) {
-    player.isEliminated = true;
-    if (player.hand.length) {
-      player.cardsPlayed.push(...player.hand);
-      player.hand = [];
-    }
+function eliminatePlayer(player: PlayerType) {
+  player.isEliminated = true;
+  if (player.hand.length) {
+    player.cardsPlayed.push(...player.hand);
+    player.hand = [];
   }
 }

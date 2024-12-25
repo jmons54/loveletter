@@ -66,7 +66,15 @@ export const Card = ({
         <Image source={backCardImage} style={styles.cardImage} />
       </Animated.View>
       {card && (
-        <Animated.View style={[styles.card, frontAnimatedStyle]}>
+        <Animated.View
+          style={[
+            styles.card,
+            frontAnimatedStyle,
+            flipped && {
+              boxShadow: '-2px 2px 4px rgba(0, 0, 0, 0.3)',
+            },
+          ]}
+        >
           <Image
             source={getCardImage(card.value)}
             style={styles.cardImage}

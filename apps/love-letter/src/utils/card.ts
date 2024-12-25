@@ -84,15 +84,15 @@ export const offsetUndistributedCards = (
 ) => {
   const undistributedCards = deckCards.filter((card) => !card.isDistributed);
   const baseOffset = windowSize.large ? -60 : windowSize.medium ? -35 : -25;
-  undistributedCards.forEach((card, index) => {
+  return undistributedCards.map((card, index) =>
     Animated.timing(card.translateX, {
       toValue:
         baseOffset -
         index * (windowSize.large ? 1.5 : windowSize.medium ? 1 : 0.75),
       duration: 500,
       useNativeDriver: true,
-    }).start();
-  });
+    })
+  );
 };
 
 export const animatePlayerCards = (
@@ -115,11 +115,11 @@ export const animatePlayerCards = (
     : 25;
   const startOffset = -(offset * (cardCount - 1)) / 2;
 
-  playerCards.forEach((card, index) => {
+  return playerCards.map((card, index) =>
     Animated.timing(card.translateX, {
       toValue: (toX ?? card.initialTranslateX) + startOffset + index * offset,
       duration: 500,
       useNativeDriver: true,
-    }).start();
-  });
+    })
+  );
 };

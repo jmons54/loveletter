@@ -41,10 +41,6 @@ export function getShuffleDeck() {
   return deck;
 }
 
-export function getCardsFromDeck(game: GameType, number: number) {
-  return game.deck.slice(-number);
-}
-
 export function getRemainingCards(game: GameType): CardType[] {
   const fullDeck = getDeck();
   const knownCards = getCardsPlayed(game);
